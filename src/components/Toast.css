@@ -1,0 +1,20 @@
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid var(--success-color);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
