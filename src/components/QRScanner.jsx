@@ -1,10 +1,65 @@
 import { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Copy } from 'lucide-react';
+import { Copy, Save } from 'lucide-react';
 import './QRScanner.css';
 
 export default function QRScanner({ showToast }) {
   const [scannedData, setScannedData] = useState(null);
+  const [saveAccount, setSaveAccount] = useState(true);
+
+  // Fallback for non-https or non-user-gesture environments
+  const fallbackCopyTextToClipboard = (text) => {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      return true;
+    } catch (err) {
+      console.error('Fallback: Oops, unable to copy', err);
+      return false;
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text)
+        .then(() => showToast('계좌번호가 클립보드에 복사되었습니다!'))
+        .catch(() => {
+          if(fallbackCopyTextToClipboard(text)) {
+            showToast('계좌번호가 클립보드에 복사되었습니다!');
+          } else {
+            showToast('복사에 실패했습니다. 버튼을 다시 눌러주세요.');
+          }
+        });
+    } else {
+      if(fallbackCopyTextToClipboard(text)) {
+        showToast('계좌번호가 클립보드에 복사되었습니다!');
+      } else {
+        showToast('복사에 실패했습니다. 버튼을 다시 눌러주세요.');
+      }
+    }
+  };
+
+  const saveToLocalStorage = (data) => {
+    try {
+      const saved = localStorage.getItem('acclink_saved_accounts');
+      const accounts = saved ? JSON.parse(saved) : [];
+      // Prevent duplicates
+      const exists = accounts.find(acc => acc.account === data.account && acc.bank === data.bank);
+      if (!exists) {
+        accounts.push(data);
+        localStorage.setItem('acclink_saved_accounts', JSON.stringify(accounts));
+      }
+    } catch (e) {
+      console.error("Failed to save account", e);
+    }
+  };
 
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
@@ -18,11 +73,11 @@ export default function QRScanner({ showToast }) {
         const data = JSON.parse(decodedText);
         if (data.bank && data.account) {
           setScannedData(data);
-          // Auto copy to clipboard
+          
+          // Try auto-copying
           const textToCopy = `${data.bank} ${data.account}`;
-          navigator.clipboard.writeText(textToCopy).then(() => {
-            showToast('계좌번호가 클립보드에 복사되었습니다!');
-          });
+          copyToClipboard(textToCopy);
+
           scanner.clear();
         }
       } catch (e) {
@@ -31,20 +86,22 @@ export default function QRScanner({ showToast }) {
     };
 
     scanner.render(onScanSuccess, (err) => {
-      // Ignore scan errors, they happen when no QR is found
+      // Ignore scan errors
     });
 
     return () => {
       scanner.clear().catch(err => console.error("Failed to clear scanner", err));
     };
-  }, [showToast]);
+  }, []); 
 
   const handleManualCopy = () => {
     if (scannedData) {
       const textToCopy = `${scannedData.bank} ${scannedData.account}`;
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        showToast('계좌번호가 복사되었습니다!');
-      });
+      copyToClipboard(textToCopy);
+      
+      if (saveAccount) {
+        saveToLocalStorage(scannedData);
+      }
     }
   };
 
@@ -72,10 +129,19 @@ export default function QRScanner({ showToast }) {
             <div className="account-num">{scannedData.account}</div>
             {scannedData.name && <div className="account-holder">{scannedData.name}</div>}
           </div>
+
+          <label className="save-checkbox-container mt-4">
+            <input 
+              type="checkbox" 
+              checked={saveAccount} 
+              onChange={(e) => setSaveAccount(e.target.checked)} 
+            />
+            <span>이 계좌를 내 목록에 저장하기</span>
+          </label>
           
           <button className="btn btn-primary w-full mt-4" onClick={handleManualCopy}>
             <Copy size={20} />
-            다시 복사하기
+            복사 및 저장하기
           </button>
           <button className="btn btn-secondary w-full mt-2" onClick={handleScanAgain}>
             다시 스캔하기
