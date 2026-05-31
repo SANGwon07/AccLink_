@@ -1,15 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MyQRCode from './components/MyQRCode';
 import QRScanner from './components/QRScanner';
 import Toast from './components/Toast';
 import SavedAccountsModal from './components/SavedAccountsModal';
-import { QrCode, ScanLine, Menu } from 'lucide-react';
+import { QrCode, ScanLine, Menu, Sun, Moon } from 'lucide-react';
 import './App.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('scan');
   const [toastMessage, setToastMessage] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [theme, setTheme] = useState('dark');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('acclink_theme') || 'dark';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('acclink_theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -21,9 +35,14 @@ function App() {
       <header className="app-header glass-panel">
         <div className="header-top">
           <h1 className="logo">AccLink</h1>
-          <button className="menu-btn" onClick={() => setIsModalOpen(true)}>
-            <Menu size={24} />
-          </button>
+          <div className="header-actions">
+            <button className="icon-btn" onClick={toggleTheme}>
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button className="icon-btn" onClick={() => setIsModalOpen(true)}>
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
         <nav className="tabs">
           <button 

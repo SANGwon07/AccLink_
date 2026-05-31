@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Copy, Save } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { Camera, RefreshCw, CheckCircle } from 'lucide-react';
 import './QRScanner.css';
 
 export default function QRScanner({ showToast }) {
-  const [scannedData, setScannedData] = useState(null);
+  const [cameras, setCameras] = useState([]);
+  const [currentCameraId, setCurrentCameraId] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [showSuccessMark, setShowSuccessMark] = useState(false);
   const [saveAccount, setSaveAccount] = useState(true);
+  
+  const scannerRef = useRef(null);
 
-  // Fallback for non-https or non-user-gesture environments
   const fallbackCopyTextToClipboard = (text) => {
     var textArea = document.createElement("textarea");
     textArea.value = text;
@@ -29,20 +33,14 @@ export default function QRScanner({ showToast }) {
   const copyToClipboard = (text) => {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text)
-        .then(() => showToast('계좌번호가 클립보드에 복사되었습니다!'))
+        .then(() => showToast('계좌번호가 복사되었습니다!'))
         .catch(() => {
-          if(fallbackCopyTextToClipboard(text)) {
-            showToast('계좌번호가 클립보드에 복사되었습니다!');
-          } else {
-            showToast('복사에 실패했습니다. 버튼을 다시 눌러주세요.');
-          }
+           if (fallbackCopyTextToClipboard(text)) showToast('계좌번호가 복사되었습니다!');
+           else showToast('복사에 실패했습니다.');
         });
     } else {
-      if(fallbackCopyTextToClipboard(text)) {
-        showToast('계좌번호가 클립보드에 복사되었습니다!');
-      } else {
-        showToast('복사에 실패했습니다. 버튼을 다시 눌러주세요.');
-      }
+      if (fallbackCopyTextToClipboard(text)) showToast('계좌번호가 복사되었습니다!');
+      else showToast('복사에 실패했습니다.');
     }
   };
 
@@ -50,7 +48,6 @@ export default function QRScanner({ showToast }) {
     try {
       const saved = localStorage.getItem('acclink_saved_accounts');
       const accounts = saved ? JSON.parse(saved) : [];
-      // Prevent duplicates
       const exists = accounts.find(acc => acc.account === data.account && acc.bank === data.bank);
       if (!exists) {
         accounts.push(data);
@@ -62,92 +59,141 @@ export default function QRScanner({ showToast }) {
   };
 
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      false
-    );
-
-    const onScanSuccess = (decodedText) => {
-      try {
-        const data = JSON.parse(decodedText);
-        if (data.bank && data.account) {
-          setScannedData(data);
-          
-          // Try auto-copying
-          const textToCopy = `${data.bank} ${data.account}`;
-          copyToClipboard(textToCopy);
-
-          scanner.clear();
-        }
-      } catch (e) {
-        console.error("Invalid QR format");
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        setCameras(devices);
+        // default to back camera (usually last one)
+        setCurrentCameraId(devices[devices.length - 1].id);
       }
-    };
-
-    scanner.render(onScanSuccess, (err) => {
-      // Ignore scan errors
+    }).catch(err => {
+      console.error("Error getting cameras", err);
+      showToast("카메라 권한을 허용해주세요.");
     });
-
+    
     return () => {
-      scanner.clear().catch(err => console.error("Failed to clear scanner", err));
+      stopScanner();
     };
-  }, []); 
+  }, []);
 
-  const handleManualCopy = () => {
-    if (scannedData) {
-      const textToCopy = `${scannedData.bank} ${scannedData.account}`;
-      copyToClipboard(textToCopy);
-      
-      if (saveAccount) {
-        saveToLocalStorage(scannedData);
+  const stopScanner = async () => {
+    if (scannerRef.current && isScanning) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+        setIsScanning(false);
+      } catch (e) {
+        console.error("Failed to stop scanner", e);
       }
     }
   };
 
-  const handleScanAgain = () => {
-    setScannedData(null);
-    showToast('스캔 탭을 다시 눌러주세요.');
+  const startScanner = async (cameraId) => {
+    if (!cameraId) return;
+    
+    try {
+      if (scannerRef.current && isScanning) {
+        await stopScanner();
+      }
+
+      const html5QrCode = new Html5Qrcode("reader");
+      scannerRef.current = html5QrCode;
+
+      await html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => handleScanSuccess(decodedText, html5QrCode),
+        () => {} // ignore frame errors
+      );
+      setIsScanning(true);
+    } catch (err) {
+      console.error("Error starting scanner", err);
+    }
+  };
+
+  const handleScanSuccess = (decodedText, html5QrCode) => {
+    if (showSuccessMark) return;
+
+    try {
+      const data = JSON.parse(decodedText);
+      if (data.bank && data.account) {
+        if (html5QrCode.getState() === 2) { // 2 = scanning
+          html5QrCode.pause();
+        }
+
+        const amountStr = data.amount ? ` [${data.amount.toLocaleString()}원]` : '';
+        const textToCopy = `${data.bank} ${data.account}${amountStr}`;
+        copyToClipboard(textToCopy);
+        
+        if (saveAccount) {
+          saveToLocalStorage(data);
+        }
+
+        setShowSuccessMark(true);
+        setTimeout(() => {
+          setShowSuccessMark(false);
+          if (html5QrCode.getState() === 3) { // 3 = paused
+             html5QrCode.resume();
+          }
+        }, 1500);
+      }
+    } catch (e) {
+      // Not our JSON
+    }
+  };
+
+  useEffect(() => {
+    if (currentCameraId) {
+      startScanner(currentCameraId);
+    }
+  }, [currentCameraId]);
+
+  const handleSwitchCamera = () => {
+    if (cameras.length > 1) {
+      const currentIndex = cameras.findIndex(c => c.id === currentCameraId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      setCurrentCameraId(cameras[nextIndex].id);
+    }
   };
 
   return (
     <div className="scanner-container glass-panel animate-fade-in">
-      <h2 className="title text-center mb-4">QR 스캔</h2>
+      <div className="scanner-header">
+        <h2 className="title">QR 스캔</h2>
+        {cameras.length > 1 && (
+          <button className="icon-btn-round" onClick={handleSwitchCamera}>
+            <RefreshCw size={20} />
+          </button>
+        )}
+      </div>
       
-      {!scannedData ? (
-        <div className="scanner-wrapper">
-          <div id="reader" className="qr-reader"></div>
-          <p className="hint text-center mt-4">카메라로 상대방의 계좌 QR을 비춰주세요.</p>
-        </div>
-      ) : (
-        <div className="result-wrapper animate-slide-up">
-          <div className="success-icon">✓</div>
-          <h3 className="result-title">스캔 완료!</h3>
-          
-          <div className="account-card">
-            <div className="bank-name">{scannedData.bank}</div>
-            <div className="account-num">{scannedData.account}</div>
-            {scannedData.name && <div className="account-holder">{scannedData.name}</div>}
+      <div className="scanner-wrapper mt-4">
+        <div id="reader" className="qr-reader"></div>
+        
+        {showSuccessMark && (
+          <div className="success-overlay animate-fade-in">
+            <CheckCircle size={80} color="var(--success-color)" />
+            <p className="success-text">복사 완료!</p>
           </div>
+        )}
 
-          <label className="save-checkbox-container mt-4">
-            <input 
-              type="checkbox" 
-              checked={saveAccount} 
-              onChange={(e) => setSaveAccount(e.target.checked)} 
-            />
-            <span>이 계좌를 내 목록에 저장하기</span>
-          </label>
-          
-          <button className="btn btn-primary w-full mt-4" onClick={handleManualCopy}>
-            <Copy size={20} />
-            복사 및 저장하기
-          </button>
-          <button className="btn btn-secondary w-full mt-2" onClick={handleScanAgain}>
-            다시 스캔하기
-          </button>
-        </div>
-      )}
+        {!isScanning && !showSuccessMark && cameras.length > 0 && (
+          <div className="loading-overlay">
+            <Camera size={40} className="animate-pulse" />
+            <p>카메라 준비 중...</p>
+          </div>
+        )}
+      </div>
+      
+      <p className="hint text-center mt-4">카메라 영역에 QR 코드를 비춰주세요.</p>
+
+      <label className="save-checkbox-container justify-center mt-4">
+        <input 
+          type="checkbox" 
+          checked={saveAccount} 
+          onChange={(e) => setSaveAccount(e.target.checked)} 
+        />
+        <span>스캔한 계좌를 내 목록에 저장하기</span>
+      </label>
     </div>
   );
 }

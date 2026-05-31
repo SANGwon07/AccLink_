@@ -6,9 +6,26 @@
   --primary-color: #3b82f6;
   --primary-hover: #2563eb;
   --surface-color: rgba(30, 41, 59, 0.7);
+  --surface-color-solid: #1e293b;
   --border-color: rgba(255, 255, 255, 0.1);
   --success-color: #10b981;
   --error-color: #ef4444;
+  --muted-text: #94a3b8;
+  --input-bg: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='light'] {
+  --bg-color: #f1f5f9;
+  --text-color: #0f172a;
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --surface-color: rgba(255, 255, 255, 0.7);
+  --surface-color-solid: #ffffff;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --success-color: #059669;
+  --error-color: #dc2626;
+  --muted-text: #64748b;
+  --input-bg: rgba(255, 255, 255, 0.8);
 }
 
 * {
@@ -26,6 +43,7 @@ body {
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .glass-panel {
@@ -59,25 +77,35 @@ body {
 .btn-primary:hover {
   background-color: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .btn-secondary {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  background-color: rgba(128, 128, 128, 0.2);
+  color: var(--text-color);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(128, 128, 128, 0.3);
+}
+
+.btn-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--error-color);
+}
+
+.btn-danger:hover {
+  background-color: var(--error-color);
+  color: white;
 }
 
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: var(--input-bg);
   border: 1px solid var(--border-color);
-  color: white;
+  color: var(--text-color);
   font-size: 1rem;
   transition: border-color 0.2s ease;
   outline: none;

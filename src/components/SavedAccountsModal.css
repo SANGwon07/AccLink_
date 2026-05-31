@@ -47,22 +47,41 @@
   font-weight: 600;
 }
 
+.icon-btn-round {
+  background: rgba(128, 128, 128, 0.1);
+  border: none;
+  color: var(--text-color);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.icon-btn-round:hover {
+  background: rgba(128, 128, 128, 0.2);
+}
+
 .account-list {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
+  flex: 1;
 }
 
 .empty-text {
   text-align: center;
-  color: #94a3b8;
+  color: var(--muted-text);
   padding: 2rem 0;
 }
 
 .saved-account-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(128, 128, 128, 0.05);
   border: 1px solid var(--border-color);
   padding: 1rem;
   border-radius: 0.75rem;
@@ -90,7 +109,7 @@
 
 .saved-name {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--muted-text);
 }
 
 .saved-actions {
@@ -99,9 +118,9 @@
 }
 
 .action-btn {
-  background: rgba(255,255,255,0.1);
+  background: rgba(128, 128, 128, 0.1);
   border: none;
-  color: white;
+  color: var(--text-color);
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -113,10 +132,16 @@
 }
 
 .action-btn:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(128, 128, 128, 0.2);
 }
 
 .action-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--error-color);
+}
+
+.modal-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
 }

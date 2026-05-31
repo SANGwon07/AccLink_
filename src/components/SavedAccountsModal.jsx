@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Copy, Trash2 } from 'lucide-react';
+import { X, Copy, Trash2, AlertTriangle } from 'lucide-react';
 import './SavedAccountsModal.css';
 
 export default function SavedAccountsModal({ onClose, showToast }) {
@@ -58,12 +58,22 @@ export default function SavedAccountsModal({ onClose, showToast }) {
     showToast('삭제되었습니다.');
   };
 
+  const handleResetAll = () => {
+    if (window.confirm("정말로 모든 데이터를 초기화하시겠습니까?\n내 계좌 및 저장된 계좌가 모두 영구적으로 삭제됩니다.")) {
+      localStorage.removeItem('acclink_saved_accounts');
+      localStorage.removeItem('acclink_my_accounts');
+      setSavedAccounts([]);
+      showToast('모든 데이터가 초기화되었습니다.');
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="modal-overlay animate-fade-in" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-content glass-panel animate-slide-up">
         <div className="modal-header">
           <h2>저장된 계좌 관리</h2>
-          <button className="icon-btn" onClick={onClose}>
+          <button className="icon-btn-round" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
@@ -90,6 +100,13 @@ export default function SavedAccountsModal({ onClose, showToast }) {
               </div>
             ))
           )}
+        </div>
+        
+        <div className="modal-footer">
+          <button className="btn btn-danger w-full" onClick={handleResetAll}>
+            <AlertTriangle size={18} />
+            모든 데이터 초기화
+          </button>
         </div>
       </div>
     </div>
