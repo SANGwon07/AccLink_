@@ -1,14 +1,9 @@
-# AccLink (계좌링크)
+AccLink
+AccLink는 사용자가 QR 코드를 통해 은행 계좌 정보를 쉽게 공유하고 스캔할 수 있도록 지원하는 서버리스 기반의 로컬 스토리지 활용 React 애플리케이션입니다.
 
-AccLink is a serverless, local-storage based React application that allows users to easily share and scan bank account information via QR codes.
+주요 기능
+로컬 스토리지(Local Storage): 귀하의 은행 계좌 정보는 브라우저에 직접 저장됩니다. 어떠한 데이터도 서버로 전송되지 않습니다.
 
-## Features
-- **Local Storage**: Your bank account information is saved directly in your browser. No data is sent to any server.
-- **QR Generation**: A personal QR code is generated instantly.
-- **QR Scanner**: Scan others' QR codes to instantly copy their bank account information to your clipboard.
+QR 코드 생성: 개인 QR 코드가 즉석에서 생성됩니다.
 
-## Deployment
-This project is built with Vite and React, making it out-of-the-box compatible with Vercel.
-1. Push this code to a GitHub repository.
-2. Import the project in Vercel.
-3. Vercel will automatically detect Vite and configure the build settings.
+QR 스캐너: 상대방의 QR 코드를 스캔하여 계좌 정보를 클립보드에 즉시 복사할 수 있습니다.
